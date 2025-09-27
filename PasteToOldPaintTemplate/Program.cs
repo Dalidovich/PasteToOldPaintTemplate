@@ -36,8 +36,59 @@ namespace PasteToOldPaintTemplate
             var a = new MemoryStream(Convert.FromBase64String(TemplateConst.template));
             var bitmapWithTemplate = PasteImgInTemplate(bitmap, new Bitmap(a), TemplateConst.mainAreaX, TemplateConst.mainAreaY);
             bitmapWithTemplate = PastePallete(bitmapWithTemplate, pallete);
+            bitmapWithTemplate = PasteTitle(bitmapWithTemplate, path);
             var savePath = $"{path.Substring(0, path.LastIndexOf('.'))}_PintPixel_ps{pixelSize}{path.Substring(path.LastIndexOf('.'))}";
             bitmapWithTemplate.Save(savePath);
+        }
+
+        public static Bitmap PasteTitle(Bitmap withTemplate, string path)
+        {
+            var fileName = Path.GetFileName(path);
+            if (fileName.Length > 27)
+                fileName = $"{fileName.Substring(0, 27)}...";
+            var title = $"{fileName}  -  Paint";
+            var block = new Bitmap(TemplateConst.titlePaintBlockSizeX, TemplateConst.titlePaintBlockSizeY);
+            for (int h = 0; h < block.Height; h++)
+                for (int w = 0; w < block.Width; w++)
+                    block.SetPixel(w, h, Color.FromArgb(255, TemplateConst.titleBlockColor.R, TemplateConst.titleBlockColor.G, TemplateConst.titleBlockColor.B));
+
+
+            using (var graphics = Graphics.FromImage(withTemplate))
+            {
+                graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.SingleBitPerPixelGridFit;
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
+
+
+                var blockX = TemplateConst.titlePaintBlockX;
+                var blockY = TemplateConst.titlePaintBlockY;
+                graphics.DrawImage(block, blockX, blockY);
+
+
+                var x = TemplateConst.titleX;
+                var y = TemplateConst.titleY;
+
+                using (var font = new Font("Fixedsys", 11, FontStyle.Bold, GraphicsUnit.World))
+                using (var brush = new SolidBrush(Color.White))
+                using (var format = new StringFormat())
+                {
+                    format.FormatFlags = StringFormatFlags.NoClip;
+                    format.Trimming = StringTrimming.None;
+                    DrawTextWithSpacing(graphics, title, font, brush, x, y, 0.7f);
+                }
+            }
+
+            return withTemplate;
+        }
+
+        private static void DrawTextWithSpacing(Graphics graphics, string text, Font font, Brush brush, float x, float y, float spacingFactor)
+        {
+            for (int i = 0; i < text.Length; i++)
+            {
+                string character = text[i].ToString();
+                graphics.DrawString(character, font, brush, x, y);
+                SizeF charSize = graphics.MeasureString(character, font);
+                x += charSize.Width * spacingFactor;
+            }
         }
 
         public static Bitmap PastePallete(Bitmap bitmap, List<Pixel> pallete)
@@ -52,7 +103,7 @@ namespace PasteToOldPaintTemplate
                 var onePallete = new Bitmap(TemplateConst.palleteSize, TemplateConst.palleteSize);
                 for (int h = 0; h < onePallete.Height; h++)
                     for (int w = 0; w < onePallete.Width; w++)
-                        onePallete.SetPixel(h, w, Color.FromArgb(255, pallete[i].R, pallete[i].G, pallete[i].B));
+                        onePallete.SetPixel(w, h, Color.FromArgb(255, pallete[i].R, pallete[i].G, pallete[i].B));
 
                 using (var graphics = Graphics.FromImage(bitmap))
                 {
