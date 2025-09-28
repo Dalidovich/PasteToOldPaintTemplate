@@ -45,7 +45,7 @@ namespace PasteToOldPaintTemplate
             var bitmapWithTemplate = PasteImgInTemplate(bitmap, new Bitmap(a), TemplateConst.MainAreaX, TemplateConst.MainAreaY);
             bitmapWithTemplate = PastePallete(bitmapWithTemplate, pallete, largePixelColor);
             bitmapWithTemplate = PasteTitle(bitmapWithTemplate, path);
-            var savePath = $"{path.Substring(0, path.LastIndexOf('.'))}_PintPixel_ps{pixelSize}{path.Substring(path.LastIndexOf('.'))}";
+            var savePath = $"{path.Substring(0, path.LastIndexOf('.'))}_PintPixel_ps{pixelSize}_cc{countOfColor}{path.Substring(path.LastIndexOf('.'))}";
             bitmapWithTemplate.Save(savePath);
         }
 
