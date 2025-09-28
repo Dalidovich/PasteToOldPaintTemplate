@@ -23,19 +23,27 @@ namespace PasteToOldPaintTemplate
                 return;
             }
 
+            Console.WriteLine("Input number of color palettes:");
+            if (!int.TryParse(Console.ReadLine(), out int countOfColor) || countOfColor <= 1 || countOfColor > 28)
+            {
+                Console.WriteLine("Invalid input number of color palettes");
+                Console.ReadLine();
+                return;
+            }
+
             var bitmap = new Bitmap(path);
-            bitmap = CreatePixelImg(bitmap, pixelSize);
+            bitmap = CreatePixelImg(bitmap, pixelSize, countOfColor);
 
             var pixels = GetPixelsFromBitmap(bitmap);
             var largePixelColor = GetLargePixelColor(pixels);
             var pallete = pixels.ToHashSet().ToList();
 
-            bitmap = ResizeImageWithBackground(bitmap, TemplateConst.mainAreaWidth, TemplateConst.mainAreaHeight,
+            bitmap = ResizeImageWithBackground(bitmap, TemplateConst.MainAreaWidth, TemplateConst.MainAreaHeight,
                 Color.FromArgb(255, largePixelColor.R, largePixelColor.G, largePixelColor.B));
 
-            var a = new MemoryStream(Convert.FromBase64String(TemplateConst.template));
-            var bitmapWithTemplate = PasteImgInTemplate(bitmap, new Bitmap(a), TemplateConst.mainAreaX, TemplateConst.mainAreaY);
-            bitmapWithTemplate = PastePallete(bitmapWithTemplate, pallete);
+            var a = new MemoryStream(Convert.FromBase64String(TemplateConst.Template));
+            var bitmapWithTemplate = PasteImgInTemplate(bitmap, new Bitmap(a), TemplateConst.MainAreaX, TemplateConst.MainAreaY);
+            bitmapWithTemplate = PastePallete(bitmapWithTemplate, pallete, largePixelColor);
             bitmapWithTemplate = PasteTitle(bitmapWithTemplate, path);
             var savePath = $"{path.Substring(0, path.LastIndexOf('.'))}_PintPixel_ps{pixelSize}{path.Substring(path.LastIndexOf('.'))}";
             bitmapWithTemplate.Save(savePath);
@@ -44,13 +52,13 @@ namespace PasteToOldPaintTemplate
         public static Bitmap PasteTitle(Bitmap withTemplate, string path)
         {
             var fileName = Path.GetFileName(path);
-            if (fileName.Length > 27)
-                fileName = $"{fileName.Substring(0, 27)}...";
+            if (fileName.Length > TemplateConst.CountOfTrimCharOnTitle)
+                fileName = $"{fileName.Substring(0, TemplateConst.CountOfTrimCharOnTitle)}...";
             var title = $"{fileName}  -  Paint";
-            var block = new Bitmap(TemplateConst.titlePaintBlockSizeX, TemplateConst.titlePaintBlockSizeY);
+            var block = new Bitmap(TemplateConst.TitlePaintBlockSizeX, TemplateConst.TitlePaintBlockSizeY);
             for (int h = 0; h < block.Height; h++)
                 for (int w = 0; w < block.Width; w++)
-                    block.SetPixel(w, h, Color.FromArgb(255, TemplateConst.titleBlockColor.R, TemplateConst.titleBlockColor.G, TemplateConst.titleBlockColor.B));
+                    block.SetPixel(w, h, Color.FromArgb(255, TemplateConst.TitleBlockColor.R, TemplateConst.TitleBlockColor.G, TemplateConst.TitleBlockColor.B));
 
 
             using (var graphics = Graphics.FromImage(withTemplate))
@@ -59,13 +67,13 @@ namespace PasteToOldPaintTemplate
                 graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBilinear;
 
 
-                var blockX = TemplateConst.titlePaintBlockX;
-                var blockY = TemplateConst.titlePaintBlockY;
+                var blockX = TemplateConst.TitlePaintBlockX;
+                var blockY = TemplateConst.TitlePaintBlockY;
                 graphics.DrawImage(block, blockX, blockY);
 
 
-                var x = TemplateConst.titleX;
-                var y = TemplateConst.titleY;
+                var x = TemplateConst.TitleX;
+                var y = TemplateConst.TitleY;
 
                 using (var font = new Font("Fixedsys", 11, FontStyle.Bold, GraphicsUnit.World))
                 using (var brush = new SolidBrush(Color.White))
@@ -91,28 +99,40 @@ namespace PasteToOldPaintTemplate
             }
         }
 
-        public static Bitmap PastePallete(Bitmap bitmap, List<Pixel> pallete)
+        public static Bitmap PastePallete(Bitmap bitmap, List<Pixel> pallete, Pixel largePixelColor)
         {
-            for (int i = 0; i < 28 - pallete.Count; i++)
+            var countOfMissingColor = TemplateConst.CountOfPallete - pallete.Count;
+            for (int i = 0; i < countOfMissingColor; i++)
             {
-                pallete.Add(new Pixel());
+                pallete.Add(new Pixel() { R = byte.MaxValue, G = byte.MaxValue, B = byte.MaxValue });
             }
 
             for (int i = 0; i < pallete.Count; i++)
             {
-                var onePallete = new Bitmap(TemplateConst.palleteSize, TemplateConst.palleteSize);
+                var onePallete = new Bitmap(TemplateConst.PalleteSize, TemplateConst.PalleteSize);
                 for (int h = 0; h < onePallete.Height; h++)
                     for (int w = 0; w < onePallete.Width; w++)
                         onePallete.SetPixel(w, h, Color.FromArgb(255, pallete[i].R, pallete[i].G, pallete[i].B));
 
                 using (var graphics = Graphics.FromImage(bitmap))
                 {
-                    var x = TemplateConst.palleteX + (i % 14 * TemplateConst.palleteSize) + (i % 14 * 3);
-                    var y = TemplateConst.palleteY + (i >= 14 ? TemplateConst.palleteSize + 3 : 0);
+                    var x = TemplateConst.PalleteX + (i % (TemplateConst.CountOfPallete / 2) * TemplateConst.PalleteSize) + (i % (TemplateConst.CountOfPallete / 2) * TemplateConst.PixelBetweenPallete);
+                    var y = TemplateConst.PalleteY + (i >= (TemplateConst.CountOfPallete / 2) ? TemplateConst.PalleteSize + TemplateConst.PixelBetweenPallete : 0);
 
                     graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
                     graphics.DrawImage(onePallete, x, y);
                 }
+            }
+
+            var currentPallete = new Bitmap(TemplateConst.CurrentPalleteSize, TemplateConst.CurrentPalleteSize);
+            for (int h = 0; h < currentPallete.Height; h++)
+                for (int w = 0; w < currentPallete.Width; w++)
+                    currentPallete.SetPixel(w, h, Color.FromArgb(255, largePixelColor.R, largePixelColor.G, largePixelColor.B));
+
+            using (var graphics = Graphics.FromImage(bitmap))
+            {
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
+                graphics.DrawImage(currentPallete, TemplateConst.CurrentPalleteX, TemplateConst.CurrentPalleteY);
             }
 
             return bitmap;
@@ -145,7 +165,7 @@ namespace PasteToOldPaintTemplate
                                     .First().Key;
         }
 
-        public static Bitmap CreatePixelImg(Bitmap bitmap, int pixelSize)
+        public static Bitmap CreatePixelImg(Bitmap bitmap, int pixelSize, int countOfColor)
         {
             var newWidth = (int)Math.Ceiling((double)bitmap.Width / pixelSize);
             var newHeight = (int)Math.Ceiling((double)bitmap.Height / pixelSize);
@@ -162,7 +182,7 @@ namespace PasteToOldPaintTemplate
                     pixels.Add(GetAvgRGBCanal(bitmap, x, y, blockWidth, blockHeight));
                 }
             }
-            pixels = ReduceColorsKMeans(pixels.ToArray(), 28).ToList();
+            pixels = ReduceColorsKMeans(pixels.ToArray(), countOfColor).ToList();
             var largePixelColor = GetLargePixelColor(pixels);
             var newBitmap = new Bitmap(newWidth, newHeight);
 
