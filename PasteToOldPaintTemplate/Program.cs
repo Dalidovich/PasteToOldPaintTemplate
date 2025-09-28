@@ -23,7 +23,7 @@ namespace PasteToOldPaintTemplate
                 return;
             }
 
-            Console.WriteLine("Input number of color palettes:");
+            Console.WriteLine("Input number of color palettes(default is 28):");
             if (!int.TryParse(Console.ReadLine(), out int countOfColor) || countOfColor <= 1 || countOfColor > 28)
             {
                 Console.WriteLine("Invalid input number of color palettes");
