@@ -36,15 +36,23 @@
 
 ## Требования
 
-- .NET 6.0 или выше
+- .NET 8.0 или выше
 - Изображения в поддерживаемых форматах (BMP, JPEG, PNG и т.д.)
 
 ## Использование
 
-1. Запустите приложение, передав путь к изображению как аргумент командной строки (перетащите изображение на exe файл):
-2. Введите размер пикселя (целое число > 0)
-3. Введите количество цветов в палитре (1-28, по умолчанию 28)
-4. Программа создаст новое изображение с суффиксом `_PintPixel_ps{размер пикселя}_cc{количество цветов}`
+```
+PasteToOldPaintTemplate.exe <путь> [опции]
+
+Опции:
+  --input, -i <путь>              Путь к входному файлу
+  --output, -o <путь>             Путь к выходному файлу
+  --pixelate-size, -ps <число>    Размер блока пикселизации
+  --max-colors, -mc <число>       Количество цветов палитры (1-28)
+  --help, -h                      Показать справку
+```
+
+Если опции не переданы, программа запросит их интерактивно.
 
 ## Особенности реализации
 
@@ -57,11 +65,20 @@
 ```bash
 dotnet publish -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true
 ```
-Использование
+Все аргументы через флаги
+```bash
+PasteToOldPaintTemplate.exe photo.jpg -ps 8 -mc 16 -o result.jpg
+PasteToOldPaintTemplate.exe -i photo.jpg --pixelate-size 4 --max-colors 12
+```
+Интерактивный режим (без флагов)
 ```bash
 PasteToOldPaintTemplate.exe "C:\images\photo.jpg"
 Input pixel size: 10
 Input number of color palettes(default is 28): 16
+```
+Частичное использование флагов (недостающие запрашиваются интерактивно)
+```bash
+PasteToOldPaintTemplate.exe photo.jpg -ps 8
 ```
 
 ## Ограничения
