@@ -6,33 +6,82 @@ namespace PasteToOldPaintTemplate
     {
         static void Main(string[] args)
         {
-            if (args.Length != 1 || !Path.Exists(args[0]) || !File.Exists(args[0]))
+            string? inputPath = null;
+            int? pixelSize = null;
+            int? countOfColor = null;
+            string? outputPath = null;
+
+            var positionalArgs = new List<string>();
+            for (int i = 0; i < args.Length; i++)
+            {
+                var arg = args[i];
+                if (arg is "--help" or "-h")
+                {
+                    ShowHelp();
+                    return;
+                }
+                else if (arg is "--input" or "-i")
+                {
+                    if (i + 1 < args.Length)
+                        inputPath = args[++i];
+                }
+                else if (arg is "--pixelate-size" or "-ps")
+                {
+                    if (i + 1 < args.Length && int.TryParse(args[++i], out int ps) && ps > 0)
+                        pixelSize = ps;
+                }
+                else if (arg is "--max-colors" or "-mc")
+                {
+                    if (i + 1 < args.Length && int.TryParse(args[++i], out int mc) && mc > 1 && mc <= 28)
+                        countOfColor = mc;
+                }
+                else if (arg is "--output" or "-o")
+                {
+                    if (i + 1 < args.Length)
+                        outputPath = args[++i];
+                }
+                else
+                {
+                    positionalArgs.Add(arg);
+                }
+            }
+
+            if (inputPath == null && positionalArgs.Count > 0)
+                inputPath = positionalArgs[0];
+
+            if (inputPath == null || !Path.Exists(inputPath) || !File.Exists(inputPath))
             {
                 Console.WriteLine("Path to file not found");
                 Console.ReadLine();
                 return;
             }
 
-            var path = args[0];
-
-            Console.WriteLine("Input pixel size:");
-            if (!int.TryParse(Console.ReadLine(), out int pixelSize) || pixelSize <= 0)
+            if (pixelSize == null)
             {
-                Console.WriteLine("Invalid input pixel size");
-                Console.ReadLine();
-                return;
+                Console.WriteLine("Input pixel size:");
+                if (!int.TryParse(Console.ReadLine(), out int ps) || ps <= 0)
+                {
+                    Console.WriteLine("Invalid input pixel size");
+                    Console.ReadLine();
+                    return;
+                }
+                pixelSize = ps;
             }
 
-            Console.WriteLine("Input number of color palettes(default is 28):");
-            if (!int.TryParse(Console.ReadLine(), out int countOfColor) || countOfColor <= 1 || countOfColor > 28)
+            if (countOfColor == null)
             {
-                Console.WriteLine("Invalid input number of color palettes");
-                Console.ReadLine();
-                return;
+                Console.WriteLine("Input number of color palettes(default is 28):");
+                if (!int.TryParse(Console.ReadLine(), out int cc) || cc <= 1 || cc > 28)
+                {
+                    Console.WriteLine("Invalid input number of color palettes");
+                    Console.ReadLine();
+                    return;
+                }
+                countOfColor = cc;
             }
 
-            var bitmap = new Bitmap(path);
-            bitmap = CreatePixelImg(bitmap, pixelSize, countOfColor);
+            var bitmap = new Bitmap(inputPath);
+            bitmap = CreatePixelImg(bitmap, pixelSize.Value, countOfColor.Value);
 
             var pixels = GetPixelsFromBitmap(bitmap);
             var largePixelColor = GetLargePixelColor(pixels);
@@ -44,9 +93,27 @@ namespace PasteToOldPaintTemplate
             var a = new MemoryStream(Convert.FromBase64String(TemplateConst.Template));
             var bitmapWithTemplate = PasteImgInTemplate(bitmap, new Bitmap(a), TemplateConst.MainAreaX, TemplateConst.MainAreaY);
             bitmapWithTemplate = PastePallete(bitmapWithTemplate, pallete, largePixelColor);
-            bitmapWithTemplate = PasteTitle(bitmapWithTemplate, path);
-            var savePath = $"{path.Substring(0, path.LastIndexOf('.'))}_PintPixel_ps{pixelSize}_cc{countOfColor}{path.Substring(path.LastIndexOf('.'))}";
+            bitmapWithTemplate = PasteTitle(bitmapWithTemplate, inputPath);
+            var savePath = outputPath ?? $"{inputPath.Substring(0, inputPath.LastIndexOf('.'))}_PintPixel_ps{pixelSize}_cc{countOfColor}{inputPath.Substring(inputPath.LastIndexOf('.'))}";
             bitmapWithTemplate.Save(savePath);
+        }
+
+        static void ShowHelp()
+        {
+            Console.WriteLine("Usage:");
+            Console.WriteLine("  PasteToOldPaintTemplate.exe <path> [options]");
+            Console.WriteLine();
+            Console.WriteLine("Options:");
+            Console.WriteLine("  --input, -i <path>              Input file path");
+            Console.WriteLine("  --output, -o <path>             Output file path");
+            Console.WriteLine("  --pixelate-size, -ps <number>   Pixel block size");
+            Console.WriteLine("  --max-colors, -mc <number>      Number of palette colors (1-28)");
+            Console.WriteLine("  --help, -h                      Show help");
+            Console.WriteLine();
+            Console.WriteLine("Examples:");
+            Console.WriteLine("  PasteToOldPaintTemplate.exe photo.jpg -ps 8 -mc 16");
+            Console.WriteLine("  PasteToOldPaintTemplate.exe -i photo.jpg -o out.jpg --pixelate-size 4");
+            Console.WriteLine("  PasteToOldPaintTemplate.exe photo.jpg");
         }
 
         public static Bitmap PasteTitle(Bitmap withTemplate, string path)
